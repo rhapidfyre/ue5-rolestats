@@ -1,0 +1,15 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\intermediate\\build\\win64\\x64\\unrealeditor\\debuggame\\rolestats\\module.rolestats.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\projects\\talesdungeoneer\\intermediate\\build\\win64\\x64\\talesdungeoneereditor\\debuggame\\engine\\sharedpch.engine.nonoptimized.cpp17.inclorderunreal5_1.h.pch",
+        "Includes": [
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\intermediate\\build\\win64\\x64\\unrealeditor\\debuggame\\rolestats\\definitions.rolestats.h",
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\source\\rolestats\\private\\rolestats.cpp",
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\source\\rolestats\\public\\rolestats.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

@@ -1,0 +1,8 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.RoleStats.cpp.obj": [
+			"RoleStats.cpp.obj"
+		]
+	}
+}

@@ -1,0 +1,12 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-RoleStats-Win64-DebugGame.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:\Projects\TalesDungeoneer\Intermediate\Build\Win64\x64\TalesDungeoneerEditor\DebugGame\Engine\SharedPCH.Engine.NonOptimized.Cpp17.InclOrderUnreal5_1.h.obj"
+"D:\Projects\TalesDungeoneer\Plugins\RoleStats\Intermediate\Build\Win64\x64\UnrealEditor\DebugGame\RoleStats\Module.RoleStats.cpp.obj"
+"D:\Projects\TalesDungeoneer\Plugins\RoleStats\Intermediate\Build\Win64\x64\UnrealEditor\DebugGame\RoleStats\Default.rc2.res"
+/OUT:"D:\Projects\TalesDungeoneer\Plugins\RoleStats\Intermediate\Build\Win64\x64\UnrealEditor\DebugGame\RoleStats\UnrealEditor-RoleStats-Win64-DebugGame.lib"
