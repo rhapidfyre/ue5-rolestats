@@ -1,0 +1,17 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\source\\rolestats\\private\\attributes\\rseffectattributeset.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\projects\\talesdungeoneer\\intermediate\\build\\win64\\x64\\talesdungeoneereditor\\debuggame\\unrealed\\sharedpch.unrealed.project.nonoptimized.valapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\intermediate\\build\\win64\\x64\\unrealeditor\\debuggame\\rolestats\\definitions.rolestats.h",
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\source\\rolestats\\public\\attributes\\rseffectattributeset.h",
+            "d:\\unrealengine\\ue_5.4\\engine\\plugins\\runtime\\gameplayabilities\\source\\gameplayabilities\\public\\attributeset.h",
+            "d:\\unrealengine\\ue_5.4\\engine\\plugins\\runtime\\gameplayabilities\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplayabilities\\uht\\attributeset.generated.h",
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\intermediate\\build\\win64\\unrealeditor\\inc\\rolestats\\uht\\rseffectattributeset.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

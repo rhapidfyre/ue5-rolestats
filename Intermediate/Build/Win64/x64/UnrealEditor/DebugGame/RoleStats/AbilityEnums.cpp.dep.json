@@ -1,0 +1,14 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\source\\rolestats\\private\\lib\\abilityenums.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\projects\\talesdungeoneer\\intermediate\\build\\win64\\x64\\talesdungeoneereditor\\debuggame\\unrealed\\sharedpch.unrealed.project.nonoptimized.valapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\intermediate\\build\\win64\\x64\\unrealeditor\\debuggame\\rolestats\\definitions.rolestats.h",
+            "d:\\projects\\talesdungeoneer\\plugins\\rolestats\\source\\rolestats\\public\\lib\\abilityenums.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

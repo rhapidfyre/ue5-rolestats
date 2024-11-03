@@ -2,7 +2,32 @@
 	"RemapUnityFiles": 
 	{
 		"Module.RoleStats.cpp.obj": [
-			"RoleStats.cpp.obj"
+			"AbilityEnums.gen.cpp.obj",
+			"RoleStats.init.gen.cpp.obj",
+			"RsAbilityComponent.gen.cpp.obj",
+			"RsAbilityTask.gen.cpp.obj",
+			"RsCoreAttributeSet.gen.cpp.obj",
+			"RsDamageAttributeSet.gen.cpp.obj",
+			"RsEffectAttributeSet.gen.cpp.obj",
+			"RsEffectDamageCalc.gen.cpp.obj",
+			"RsGameplayAbilityBase.gen.cpp.obj",
+			"RsGameplayEffectBase.gen.cpp.obj",
+			"RsGameplayEffectContext.gen.cpp.obj",
+			"RsVitalityAttributeSet.gen.cpp.obj",
+			"RsGameplayAbilityBase.cpp.obj",
+			"RsAbilityTask.cpp.obj",
+			"RsCoreAttributeSet.cpp.obj",
+			"RsDamageAttributeSet.cpp.obj",
+			"RsEffectAttributeSet.cpp.obj",
+			"RsVitalityAttributeSet.cpp.obj",
+			"RsEffectDamageCalc.cpp.obj",
+			"RsGameplayEffectBase.cpp.obj",
+			"RsGameplayEffectContext.cpp.obj",
+			"AbilityEnums.cpp.obj",
+			"AttributeHelpers.cpp.obj",
+			"RsGlobals.cpp.obj",
+			"RoleStats.cpp.obj",
+			"RsAbilityComponent.cpp.obj"
 		]
 	}
 }

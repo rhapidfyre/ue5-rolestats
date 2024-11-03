@@ -1,0 +1,56 @@
+﻿// Starcache Studios, LLC (c) 2024
+
+
+#include "Lib/RsGlobals.h"
+
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Status_Dead,			 "Core.Effects.Status.Dead")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Sex_Male, 					 "Core.Sex.Male")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Sex_Female, 					 "Core.Sex.Female")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Cues_Effects_Attack_1h,			"GameplayCue.Effects.Attack.1h")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Cues_Effects_Attack_1h_Male,		 "GameplayCue.Effects.Attack.1h.Male")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Cues_Effects_Attack_1h_Female,	 "GameplayCue.Effects.Attack.1h.Female")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Primary, 			 "Core.Ability.Primary")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Secondary, 			 "Core.Ability.Secondary")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_1, 			 "Core.Ability.Hotkey.1")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_2, 			 "Core.Ability.Hotkey.2")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_3, 			 "Core.Ability.Hotkey.3")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_4, 			 "Core.Ability.Hotkey.4")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_5, 			 "Core.Ability.Hotkey.5")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_6, 			 "Core.Ability.Hotkey.6")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_7, 			 "Core.Ability.Hotkey.7")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_8, 			 "Core.Ability.Hotkey.8")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_9, 			 "Core.Ability.Hotkey.9")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_0, 			 "Core.Ability.Hotkey.0")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats,						"Core.Stats")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Strength,				 "Core.Stats.Strength")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Dexterity,				 "Core.Stats.Dexterity")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Fortitude,				 "Core.Stats.Fortitude")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Astuteness,			 "Core.Stats.Astuteness")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Intellect,				 "Core.Stats.Intellect")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Charisma,				 "Core.Stats.Charisma")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage,					    "Damage")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_SetByCaller,			 "Damage.SetByCaller")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_World,				 "Damage.World")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical,				"Damage.Physical")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Blunt, 		 "Damage.Physical.Blunt")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Slash, 		 "Damage.Physical.Slash")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Pierce,		 "Damage.Physical.Pierce")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Bite, 		 "Damage.Physical.Bite")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Kick, 		 "Damage.Physical.Kick")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Claw, 		 "Damage.Physical.Claw")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Physical_Sting, 		 "Damage.Physical.Sting")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental,			"Damage.Elemental")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental_Fire,		 "Damage.Elemental.Fire")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental_Frost,		 "Damage.Elemental.Frost")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental_Acid,		 "Damage.Elemental.Acid")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental_Shock,		 "Damage.Elemental.Shock")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental_Radioactive, "Damage.Elemental.Radioactive")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Elemental_Sonic,		 "Damage.Elemental.Sonic")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Magic,				"Damage.Magic")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Magic_Holy,			 "Damage.Magic.Holy")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Damage_Magic_DarkMagic,		 "Damage.Magic.Dark")
