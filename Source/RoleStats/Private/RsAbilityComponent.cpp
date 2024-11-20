@@ -29,15 +29,60 @@ URsAbilityComponent::URsAbilityComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);
+
+	this->OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &URsAbilityComponent::NewGameplayEffectAppliedToSelf);
+	FOnGivenActiveGameplayEffectRemoved* GERemovedDelegate = &OnAnyGameplayEffectRemovedDelegate();
+	GERemovedDelegate->AddUObject(this, &URsAbilityComponent::OnAnyGameplayEffectRemoved);
 }
 
+void URsAbilityComponent::NewGameplayEffectAppliedToSelf(
+	UAbilitySystemComponent* SourceAsc, const FGameplayEffectSpec& EffectSpec, FActiveGameplayEffectHandle EffectHandle)
+{
+	UE_LOGFMT(LogTemp, Display, "{Name}({NetAuthority}): New Gameplay Effect Applied -> {EffectSpec} {EffectHandle}"
+		, GetName(), GetOwner()->HasAuthority() ? "SERVER" : "CLIENT", EffectSpec.ToSimpleString(), EffectHandle.ToString());
+	OnGameplayEffectAdded.Broadcast(EffectSpec, EffectHandle);
+}
+
+void URsAbilityComponent::OnAnyGameplayEffectRemoved(const FActiveGameplayEffect& ActiveGameplayEffect)
+{
+	UE_LOGFMT(LogTemp, Display, "{Name}({NetAuthority}): Active Gameplay Effect Removed -> {GameplayEffect}"
+		, GetName(), GetOwner()->HasAuthority() ? "SERVER" : "CLIENT", ActiveGameplayEffect.Spec.ToSimpleString());
+	OnGameplayEffectRemoved.Broadcast(ActiveGameplayEffect.Spec, ActiveGameplayEffect.Handle);
+}
+
+float URsAbilityComponent::GetAbilityExperience(const FGameplayTag& AbilityTag)
+{
+	const float* ExpPointer = AbilityExperience.Find(AbilityTag);
+	return ExpPointer != nullptr ? *ExpPointer : 0.0f;
+}
+
+float URsAbilityComponent::GetCooldownByAbility(const TSubclassOf<URsGameplayAbilityBase>& AbilityReference)
+{
+	if (IsValid(AbilityReference))
+	{
+		return AbilityCooldowns.Contains(AbilityReference) ? *AbilityCooldowns.Find(AbilityReference) : 0.f;
+	}
+	return 0.f;
+}
+
+void URsAbilityComponent::BindListeners()
+{
+	AbilityActivatedCallbacks.AddUObject(this, &URsAbilityComponent::RsAbilityStarted);
+	AbilityCommittedCallbacks.AddUObject(this, &URsAbilityComponent::RsAbilityActivated);
+	AbilityEndedCallbacks.AddUObject(this, &URsAbilityComponent::RsAbilityEnded);
+	AbilityFailedCallbacks.AddUObject(this, &URsAbilityComponent::RsAbilityFailed);
+}
 
 void URsAbilityComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	InitDefaultAbilities();
-	InitDefaultEffects();
+	if (GetOwner()->HasAuthority())
+	{
+		InitDefaultAbilities();
+		InitDefaultEffects();
+	}
+	BindListeners();
 }
 
 void URsAbilityComponent::InitDefaultAbilities()
@@ -79,6 +124,115 @@ void URsAbilityComponent::InitDefaultEffects()
 	}
 }
 
+void URsAbilityComponent::RsAbilityStarted(UGameplayAbility* AbilityObject)
+{
+	OnAbilityStarted.Broadcast(Cast<URsGameplayAbilityBase>(AbilityObject));
+}
+
+void URsAbilityComponent::RsAbilityActivated(UGameplayAbility* AbilityObject)
+{
+	OnAbilityActivated.Broadcast(Cast<URsGameplayAbilityBase>(AbilityObject));
+}
+
+void URsAbilityComponent::RsAbilityEnded(UGameplayAbility* AbilityObject)
+{
+	OnAbilityEnded.Broadcast(Cast<URsGameplayAbilityBase>(AbilityObject));
+}
+
+void URsAbilityComponent::RsAbilityFailed(const UGameplayAbility* AbilityObject,
+	const FGameplayTagContainer& FailureTags)
+{
+	OnAbilityFailed.Broadcast(Cast<URsGameplayAbilityBase>(AbilityObject), FailureTags);
+}
+
+void URsAbilityComponent::Client_CooldownEnded_Implementation(
+	TSubclassOf<UGameplayAbility> AbilityReference)
+{
+	if (IsValid(AbilityReference))
+	{
+		AbilityCooldowns.Remove(AbilityReference);
+		OnAbilityCooldownEnded.Broadcast(AbilityReference);
+	}
+}
+
+void URsAbilityComponent::Client_CooldownStarted_Implementation(
+	TSubclassOf<UGameplayAbility> AbilityReference, const float TimeInSeconds)
+{
+	if (IsValid(AbilityReference))
+	{
+		const URsGameplayAbilityBase* DefaultObject = Cast<URsGameplayAbilityBase>(AbilityReference.GetDefaultObject());
+		if (IsValid(DefaultObject))
+		{
+			AbilityCooldowns.Add(AbilityReference);
+			OnAbilityCooldownStarted.Broadcast(AbilityReference, DefaultObject->CooldownTime);
+		}
+	}
+}
+
+void URsAbilityComponent::CooldownTick()
+{
+	if (AbilityCooldowns.Num() < 1)
+	{
+		CooldownTimer.Invalidate();
+		return;
+	}
+
+	for (auto& AbilityCooldown : AbilityCooldowns)
+	{
+		if (AbilityCooldown.Value <= 0.f)
+		{
+			OnAbilityCooldownEnded.Broadcast(AbilityCooldown.Key);
+			Client_CooldownEnded(AbilityCooldown.Key);
+			AbilityCooldowns.Remove(AbilityCooldown.Key);
+		}
+		else
+		{
+			AbilityCooldown.Value -= CooldownRate;
+		}
+	}
+}
+
+void URsAbilityComponent::Client_SkillIncrease_Implementation(const FGameplayTag& SchoolTag, const float OldValue,
+                                                              const float NewValue)
+{
+	OnAbilitySkillEarned.Broadcast(SchoolTag, OldValue, NewValue);
+}
+
+void URsAbilityComponent::Server_AbilityActivation_Implementation(TSubclassOf<UGameplayAbility> AbilityReference)
+{
+	UE_LOGFMT(LogTemp, Display, "URsAbilityComponent::Server_AbilityActivation_Implementation()");
+
+	const TSubclassOf<URsGameplayAbilityBase> AbilityClass{AbilityReference};
+	if (IsValid(AbilityClass))
+	{
+		const URsGameplayAbilityBase* DefaultObject = AbilityReference->GetDefaultObject<URsGameplayAbilityBase>();
+		if (IsValid(DefaultObject))
+		{
+			if (DefaultObject->CooldownTime > 0.f)
+			{
+				AbilityCooldowns.Add(AbilityReference, DefaultObject->CooldownTime);
+				OnAbilityCooldownStarted.Broadcast(AbilityReference, DefaultObject->CooldownTime);
+				Client_CooldownStarted(AbilityReference, DefaultObject->CooldownTime);
+			}
+
+			FGameplayTag AbilitySkillTag = DefaultObject->AbilitySchool;
+			if (AbilitySkillTag.IsValid())
+			{
+				const float OldValue = AbilityExperience.Contains(AbilitySkillTag) ? *AbilityExperience.Find(AbilitySkillTag) : 0.f;
+				const float NewValue = OldValue + 1;
+				AbilityExperience.Add(AbilitySkillTag, NewValue);
+				OnAbilitySkillEarned.Broadcast(AbilitySkillTag, OldValue, NewValue);
+				Client_SkillIncrease(AbilitySkillTag, OldValue, NewValue);
+			}
+		}
+	}
+
+	if (AbilityCooldowns.Num() > 0 && !CooldownTimer.IsValid())
+	{
+		GetWorld()->GetTimerManager().SetTimer(CooldownTimer, this, &URsAbilityComponent::CooldownTick, CooldownRate, true);
+	}
+}
+
 void URsAbilityComponent::OnRep_IsDead_Implementation()
 {
 	bool bIsFound = false;
@@ -115,69 +269,41 @@ float URsAbilityComponent::GetDamageBonusByTag(const FGameplayTag& DamageTag) co
 	return 0.f;
 }
 
-/*
-bool URsAbilityComponent::PrimaryAbility(
-	const TSubclassOf<URsGameplayAbilityBase>& AbilityReference, const bool bStartAbility, const bool bCancelAbility)
-{
-	const bool bActivated = TryActivateAbilityByClass(AbilityReference, true);
-	if (bActivated)
-	{
-		UE_LOGFMT(LogRolestats, Display, "Activated Primary Ability Binding");
-	}
-	else
-	{
-		UE_LOGFMT(LogRolestats, Warning, "FAILED to Activate Primary Ability Binding");
-	}
-	return bActivated;
-}
-
-bool URsAbilityComponent::SecondaryAbility(
-	const TSubclassOf<URsGameplayAbilityBase>& AbilityReference, const bool bStartAbility, const bool bCancelAbility)
-{
-	if (bStartAbility)
-	{
-		const bool bActivated = TryActivateAbilityByClass(AbilityReference, true);
-		if (bActivated)
-		{
-			UE_LOGFMT(LogRolestats, Display, "Activated Secondary Ability Binding");
-		}
-		else
-		{
-			UE_LOGFMT(LogRolestats, Warning, "FAILED to Activate Secondary Ability Binding");
-		}
-		return bActivated;
-	}
-	if (FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromClass(AbilityReference))
-	{
-		if (bCancelAbility)
-		{
-			AbilityLocalInputPressed(static_cast<uint32>(EAbilityInputID::Cancel));
-			//CancelAbilitySpec(*AbilitySpec, nullptr);
-			UE_LOGFMT(LogRolestats, Warning, "Ability '{AbilityName}' was CANCELED", AbilitySpec->GetDebugString());
-			return true;
-		}
-		AbilityLocalInputPressed(static_cast<uint32>(EAbilityInputID::Confirm));
-		UE_LOGFMT(LogRolestats, Warning, "Ability '{AbilityName}' was CONFIRMED", AbilitySpec->GetDebugString());
-	}
-	return true;
-}
-*/
-
 bool URsAbilityComponent::HotkeyAbility(
 	const FInputActionValue& InputValue, const TSubclassOf<URsGameplayAbilityBase>& AbilityReference, const bool bStartAbility, const bool bCancelAbility)
 {
 	if (InputValue.Get<bool>())
 	{
+		if (AbilityCooldowns.Contains(AbilityReference))
+		{
+			UE_LOGFMT(LogRolestats, Display, "{Name}({NetAuthority}): ({AbilityReference}) is on cooldown!"
+				, GetOwner()->GetName(), GetOwner()->HasAuthority(), AbilityReference->GetName());
+			return false;
+		}
+
 		const bool bActivated = TryActivateAbilityByClass(AbilityReference, true);
 		if (bActivated)
 		{
-			UE_LOGFMT(LogRolestats, Display,
-				"Activated Hotkey Ability Binding ({AbilityReference})", AbilityReference->GetName());
+			const URsGameplayAbilityBase* DefaultObject = AbilityReference->GetDefaultObject<URsGameplayAbilityBase>();
+			if (IsValid(DefaultObject))
+			{
+				OnAbilityActivated.Broadcast(DefaultObject);
+
+				if (DefaultObject->CooldownTime > 0.f)
+				{
+					AbilityCooldowns.Add(AbilityReference, DefaultObject->CooldownTime);
+					//OnAbilityCooldownStarted.Broadcast(AbilityReference, DefaultObject->CooldownTime);
+				}
+			}
+
+			Server_AbilityActivation(AbilityReference);
+			UE_LOGFMT(LogRolestats, Display, "{Name}({NetAuthority}): Activated Hotkey Ability Binding ({AbilityReference})"
+				, GetOwner()->GetName(), GetOwner()->HasAuthority(), AbilityReference->GetName());
 		}
 		else
 		{
-			UE_LOGFMT(LogRolestats, Warning,
-				"FAILED to Activate Hotkey Ability Binding ({AbilityReference})", AbilityReference->GetName());
+			UE_LOGFMT(LogRolestats, Warning, "{Name}({NetAuthority}): FAILED to Activate Hotkey Ability Binding ({AbilityReference})"
+				, GetOwner()->GetName(), GetOwner()->HasAuthority(), AbilityReference ? AbilityReference->GetName() : "Invalid");
 		}
 		return bActivated;
 	}

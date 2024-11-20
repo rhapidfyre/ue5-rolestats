@@ -2,29 +2,49 @@
 
 
 #include "Lib/RsGlobals.h"
+#include "Lib/AbilityData.h"
 
 
-UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Status_Dead,			 "Core.Effects.Status.Dead")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Status_Dead,			"Core.Effects.Status.Dead")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Cooldown,			"Core.Effects.Cooldown")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Blocking,			"Core.Effects.Blocking")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Blocking_Physical,	"Core.Effects.Blocking.Physical")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Effects_Blocking_Magical,	"Core.Effects.Blocking.Magical")
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Sex_Male, 					 "Core.Sex.Male")
 UE_DEFINE_GAMEPLAY_TAG(TAG_Sex_Female, 					 "Core.Sex.Female")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ui_ShowEffect,				"Ui.Effect.Show")
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cues_Effects_Attack_1h,			"GameplayCue.Effects.Attack.1h")
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cues_Effects_Attack_1h_Male,		 "GameplayCue.Effects.Attack.1h.Male")
 UE_DEFINE_GAMEPLAY_TAG(TAG_Cues_Effects_Attack_1h_Female,	 "GameplayCue.Effects.Attack.1h.Female")
 
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Primary, 			 "Core.Ability.Primary")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Secondary, 			 "Core.Ability.Secondary")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_1, 			 "Core.Ability.Hotkey.1")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_2, 			 "Core.Ability.Hotkey.2")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_3, 			 "Core.Ability.Hotkey.3")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_4, 			 "Core.Ability.Hotkey.4")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_5, 			 "Core.Ability.Hotkey.5")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_6, 			 "Core.Ability.Hotkey.6")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_7, 			 "Core.Ability.Hotkey.7")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_8, 			 "Core.Ability.Hotkey.8")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_9, 			 "Core.Ability.Hotkey.9")
-UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_0, 			 "Core.Ability.Hotkey.0")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Primary, 		"Core.Ability.Primary")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Secondary, 		 "Core.Ability.Secondary")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_1, 		 "Core.Ability.Hotkey.1")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_2, 		 "Core.Ability.Hotkey.2")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_3, 		 "Core.Ability.Hotkey.3")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_4, 		 "Core.Ability.Hotkey.4")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_5, 		 "Core.Ability.Hotkey.5")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_6, 		 "Core.Ability.Hotkey.6")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_7, 		 "Core.Ability.Hotkey.7")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_8, 		 "Core.Ability.Hotkey.8")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_9, 		 "Core.Ability.Hotkey.9")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Hotkey_0, 		 "Core.Ability.Hotkey.0")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_School,					"Core.Ability.School")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Alteration,		 "Core.Ability.School.Alteration")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Evocation,		 "Core.Ability.School.Evocation")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Illusion,			 "Core.Ability.School.Illusion")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Conjuration,		 "Core.Ability.School.Conjuration")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Restoration,		 "Core.Ability.School.Restoration")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Shadow,			 "Core.Ability.School.Shadow")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Divination,		 "Core.Ability.School.Divination")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Enchantment,		 "Core.Ability.School.Enchantment")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Abjuration,		 "Core.Ability.School.Abjuration")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Nature,			 "Core.Ability.School.Nature")
+UE_DEFINE_GAMEPLAY_TAG(TAG_School_Physical,			 "Core.Ability.School.Physical")
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Stats,						"Core.Stats")
 UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_Strength,				 "Core.Stats.Strength")
