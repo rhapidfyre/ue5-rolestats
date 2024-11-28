@@ -23,9 +23,6 @@ public:
 
 	URsAbilityDataAsset();
 
-	// The amount of points to unlock this ability
-	UFUNCTION(BlueprintPure) int			GetAbilityUnlockCost() const;
-
 	// The name that is displayed (user-friendly) when showcasing the ability
 	UFUNCTION(BlueprintPure) FText			GetAbilityDisplayName() const;
 

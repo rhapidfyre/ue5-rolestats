@@ -7,8 +7,10 @@
 #include "InputAction.h"
 #include "Delegates/Delegate.h"
 #include "GameplayAbilitySpec.h" // for FGameplayAbilitySpecHandle
+#include "Lib/AbilityEnums.h"
 
 #include "RsAbilityComponent.generated.h"
+
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRolestats, Log, All);
 
@@ -47,11 +49,38 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAbilityCooldownStarted,
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityCooldownEnded, const UClass*, AbilityReference);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnResearchUpdated, const UClass*, AbilityReference);
+
 
 struct FInputActionValue;
 
 class URsGameplayEffectBase;
 class URsGameplayAbilityBase;
+
+USTRUCT(BlueprintType)
+struct ROLESTATS_API FResearchProgress
+{
+	GENERATED_BODY()
+public:
+	FResearchProgress();
+	FResearchProgress(TSubclassOf<URsGameplayAbilityBase> ResearchAbility, const float StartingSkill = 0.f);
+
+	// The ability that is being researched
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) TSubclassOf<URsGameplayAbilityBase> AbilityReference = nullptr;
+
+	// The skill level when the player started researching the ability
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) float SkillLevelStarting = 0.f;
+
+	// The skill level required when the ability becomes ready to unlock
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) float SkillLevelCurrent = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) EResearchState ResearchState = EResearchState::Experimentation;
+
+	// Number of correct reagents consumed
+	int ReagentsConsumed = 0;
+
+	bool operator==(const FResearchProgress& Element) const;
+};
 
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
@@ -71,7 +100,7 @@ public:
 
 	UFUNCTION(BlueprintCallable) bool HotkeyAbility(
 		const FInputActionValue& InputValue, const TSubclassOf<URsGameplayAbilityBase>& AbilityReference
-		, const bool bStartAbility, const bool bCancelAbility);
+		, const ETriggerEvent TriggerEvent);
 
 	virtual void ReceiveDamage(URsAbilityComponent* SourceAsc, float UnmitigatedDamage, float MitigatedDamage);
 
@@ -95,6 +124,17 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	float GetCooldownByAbility(const TSubclassOf<URsGameplayAbilityBase>& AbilityReference);
+
+	// Called when a player has updated progress on research
+	// If this is the first invocation for the given ability, it will unlock the research (if eligible)
+	UFUNCTION(BlueprintCallable)
+	void ResearchConsumeReagent(TSubclassOf<URsGameplayAbilityBase> AbilityReference, UDataAsset* ConsumedReagent, int NumReagentsConsumed = 1);
+
+	void ResearchExperienceGained(const FGameplayTag& AbilitySchoolTag, const float XpGained);
+
+	void ResearchBegin(TSubclassOf<URsGameplayAbilityBase> AbilityReference);
+
+	void ResearchPurchase(TSubclassOf<URsGameplayAbilityBase> AbilityReference);
 
 
 protected:
@@ -120,8 +160,14 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void OnRep_IsDead();
 
+	UFUNCTION(Client, Reliable)
+	void OnRep_ResearchProgress(const TArray<FResearchProgress>& OldProgress);
+
 	UFUNCTION(Server, Unreliable)
 	void Server_AbilityActivation(TSubclassOf<UGameplayAbility> AbilityReference);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ResearchBegin(TSubclassOf<UGameplayAbility> AbilityReference);
 
 	UFUNCTION(Client, Unreliable)
 	void Client_SkillIncrease(const FGameplayTag& SchoolTag, const float OldValue, const float NewValue);
@@ -145,6 +191,7 @@ public:
 	UPROPERTY(BlueprintAssignable) FOnAbilitySkillEarned	 OnAbilitySkillEarned;
 	UPROPERTY(BlueprintAssignable) FOnAbilityCooldownStarted OnAbilityCooldownStarted;
 	UPROPERTY(BlueprintAssignable) FOnAbilityCooldownEnded	 OnAbilityCooldownEnded;
+	UPROPERTY(BlueprintAssignable) FOnResearchUpdated		 OnResearchUpdated;
 
 	// Called when an ability has started without confirmation of success
 	UPROPERTY(BlueprintAssignable) FOnAbilityStarted OnAbilityStarted;
@@ -157,6 +204,12 @@ public:
 
 	// Called when an ability has failed and no effects or cooldown have been applied
 	UPROPERTY(BlueprintAssignable) FOnAbilityFailed OnAbilityFailed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
+	TSubclassOf<UGameplayAbility> DefaultAttackAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
+	TSubclassOf<UGameplayAbility> DefaultBlockAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
 	TArray< TSubclassOf<URsGameplayAbilityBase> > DefaultAbilities;
@@ -176,6 +229,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
 	TSubclassOf<UGameplayAbility> RespawnAbility;
 
+
 private:
 
 	UPROPERTY()
@@ -183,6 +237,9 @@ private:
 
 	// Ability school (key) that the character has unlocked and how much experience they have (value)
 	TMap<FGameplayTag, float> AbilityExperience;
+
+	UPROPERTY(ReplicatedUsing=OnRep_ResearchProgress)
+	TArray<FResearchProgress> ResearchProgress;
 
 	TMap<TSubclassOf<UGameplayAbility>, float> AbilityCooldowns;
 

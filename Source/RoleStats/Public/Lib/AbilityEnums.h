@@ -25,6 +25,16 @@ enum class EAbilityInputID : uint8
 };
 
 UENUM(BlueprintType)
+enum class EResearchState : uint8
+{
+	Unknown UMETA(DisplayName = "Unknown"),
+	Experimentation UMETA(DisplayName = "Experimentation"),
+	Revealed UMETA(DisplayName = "Revealed"),
+	Purchasable UMETA(DisplayName = "Purchasable"),
+	Completed UMETA(DisplayName = "Completed")
+};
+
+UENUM(BlueprintType)
 enum class EAbilityCategory : uint8
 {
 	// The ability is uncategorized and should not be listed as available

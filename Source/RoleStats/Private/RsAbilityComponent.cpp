@@ -7,6 +7,7 @@
 #include "Effects/RsGameplayEffectBase.h"
 #include "EnhancedInputComponent.h"
 #include "Attributes/RsVitalityAttributeSet.h"
+#include "Kismet/GameplayStatics.h"
 #include "Lib/RsGlobals.h"
 #include "Logging/StructuredLog.h"
 #include "Net/UnrealNetwork.h"
@@ -24,6 +25,41 @@ namespace RsInputAbilitySystem
 	}
 }
 
+
+FResearchProgress::FResearchProgress()
+{
+}
+
+FResearchProgress::FResearchProgress(TSubclassOf<URsGameplayAbilityBase> ResearchAbility, const float StartingSkill)
+	: AbilityReference(ResearchAbility), SkillLevelStarting(StartingSkill)
+{
+}
+
+bool FResearchProgress::operator==(const FResearchProgress& Element) const
+{
+	if (AbilityReference != nullptr)
+	{
+		if (AbilityReference == Element.AbilityReference)
+		{
+			if (SkillLevelStarting != Element.SkillLevelStarting)
+			{
+				return false;
+			}
+
+			if (SkillLevelCurrent != Element.SkillLevelCurrent)
+			{
+				return false;
+			}
+
+			if (ReagentsConsumed != Element.ReagentsConsumed)
+			{
+				return false;
+			}
+			return true;
+		}
+	}
+	return false;
+}
 
 URsAbilityComponent::URsAbilityComponent()
 {
@@ -65,6 +101,149 @@ float URsAbilityComponent::GetCooldownByAbility(const TSubclassOf<URsGameplayAbi
 	return 0.f;
 }
 
+/**
+ * \brief Consumed num of reagents, updating research progress until the ability is unlocked
+ * \param AbilityReference The ability being researched
+ * \param ConsumedReagent The reagent that was consumed
+ * \param NumReagentsConsumed The number of reagents consumed
+ */
+void URsAbilityComponent::ResearchConsumeReagent(TSubclassOf<URsGameplayAbilityBase> AbilityReference,
+                                                 UDataAsset* ConsumedReagent, int NumReagentsConsumed)
+{
+	for (auto& ResearchEntry : ResearchProgress)
+	{
+		if (ResearchEntry.AbilityReference == AbilityReference)
+		{
+			const auto* DefaultAbilityObject = ResearchEntry.AbilityReference->GetDefaultObject<URsGameplayAbilityBase>();
+
+			// If experimenting, convert all reagents into experience
+			if (ResearchEntry.ResearchState == EResearchState::Experimentation)
+			{
+				ResearchEntry.SkillLevelCurrent += (NumReagentsConsumed * DefaultAbilityObject->ReagentToExperienceRatio);
+				if (ResearchEntry.SkillLevelCurrent >= DefaultAbilityObject->ExperimentationNeeded)
+				{
+					ResearchEntry.ResearchState = EResearchState::Revealed;
+				}
+			}
+
+			// If the ability has been revealed, consume reagents for unlock
+			if (ResearchEntry.ResearchState == EResearchState::Revealed)
+			{
+				if (IsValid(ConsumedReagent) && NumReagentsConsumed > 0)
+				{
+					// If the reagents consumed is the correct reagent
+					if (ConsumedReagent->StaticClass() == DefaultAbilityObject->ResearchReagent)
+					{
+						ResearchEntry.ReagentsConsumed += NumReagentsConsumed;
+						if (ResearchEntry.ReagentsConsumed >= DefaultAbilityObject->ReagentsRequired)
+						{
+							ResearchEntry.ResearchState = EResearchState::Purchasable;
+						}
+					}
+				}
+			}
+
+			// Allow the player who is the server to receive the update
+			if (GetNetMode() < NM_Client)
+			{
+				OnResearchUpdated.Broadcast(ResearchEntry.AbilityReference);
+			}
+			return;
+		}
+	}
+}
+
+void URsAbilityComponent::ResearchExperienceGained(const FGameplayTag& AbilitySchoolTag, const float XpGained)
+{
+	for (auto& ResearchEntry : ResearchProgress)
+	{
+		if (const URsGameplayAbilityBase* DefaultAbilityObject = ResearchEntry.AbilityReference->GetDefaultObject<URsGameplayAbilityBase>())
+		{
+			if (DefaultAbilityObject->AbilitySchool == AbilitySchoolTag)
+			{
+				if (ResearchEntry.ResearchState == EResearchState::Experimentation)
+				{
+					ResearchEntry.SkillLevelCurrent += abs(XpGained);
+					if (ResearchEntry.SkillLevelCurrent >= DefaultAbilityObject->ExperimentationNeeded)
+					{
+						ResearchEntry.ResearchState = EResearchState::Revealed;
+						UE_LOGFMT(LogTemp, Display, "Experience Gained: '{AbilitySchool}' - Experimentation Complete"
+							, AbilitySchoolTag.ToString());
+					}
+					else
+					{
+						UE_LOGFMT(LogTemp, Display, "Experience Gained: '{AbilitySchool}' ({NewValue})"
+							, AbilitySchoolTag.ToString(), ResearchEntry.SkillLevelCurrent);
+					}
+				}
+
+				if (GetNetMode() < NM_Client)
+				{
+					OnResearchUpdated.Broadcast(ResearchEntry.AbilityReference);
+				}
+			}
+		}
+	}
+}
+
+/**
+ * \brief Starts the research process, adding the ability to the research progress data array
+ * \param AbilityReference The ability to be researched
+ */
+void URsAbilityComponent::ResearchBegin(TSubclassOf<URsGameplayAbilityBase> AbilityReference)
+{
+	if (IsValid(AbilityReference))
+	{
+		const URsGameplayAbilityBase* DefaultAbilityObject = AbilityReference->GetDefaultObject<URsGameplayAbilityBase>();
+		if (IsValid(DefaultAbilityObject))
+		{
+			FResearchProgress NewResearchData(AbilityReference, GetAbilityExperience(DefaultAbilityObject->AbilitySchool));
+			ResearchProgress.Add(NewResearchData);
+
+			if (GetNetMode() < NM_Client)
+			{
+				OnResearchUpdated.Broadcast(AbilityReference);
+			}
+		}
+	}
+}
+
+void URsAbilityComponent::ResearchPurchase(TSubclassOf<URsGameplayAbilityBase> AbilityReference)
+{
+	if (IsValid(AbilityReference))
+	{
+		for (auto& ResearchEntry : ResearchProgress)
+		{
+			if (ResearchEntry.AbilityReference == AbilityReference)
+			{
+				const URsGameplayAbilityBase* DefaultAbilityObject = AbilityReference->GetDefaultObject<URsGameplayAbilityBase>();
+				if (ResearchEntry.SkillLevelCurrent >= DefaultAbilityObject->ExperimentationNeeded)
+				{
+					if (ResearchEntry.ReagentsConsumed >= DefaultAbilityObject->ReagentsRequired)
+					{
+						ResearchEntry.ResearchState = EResearchState::Completed;
+						GiveAbility(FGameplayAbilitySpec(AbilityReference, 1,
+							static_cast<int32>(DefaultAbilityObject->AbilityInputID), this));
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	// Remove any completed research entries
+	for (int i = ResearchProgress.Num() - 1; i >= 0; i--)
+	{
+		if (ResearchProgress.IsValidIndex(i))
+		{
+			if (ResearchProgress[i].ResearchState == EResearchState::Completed)
+			{
+				ResearchProgress.RemoveAt(i);
+			}
+		}
+	}
+}
+
 void URsAbilityComponent::BindListeners()
 {
 	AbilityActivatedCallbacks.AddUObject(this, &URsAbilityComponent::RsAbilityStarted);
@@ -77,11 +256,13 @@ void URsAbilityComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Server-Only Executions
 	if (GetOwner()->HasAuthority())
 	{
 		InitDefaultAbilities();
 		InitDefaultEffects();
 	}
+
 	BindListeners();
 }
 
@@ -92,10 +273,17 @@ void URsAbilityComponent::InitDefaultAbilities()
 		return;
 	}
 
+	// Grant the default attack ability
+	if (IsValid(DefaultAttackAbility))
+	{
+		GiveAbility(FGameplayAbilitySpec(DefaultAttackAbility, 1, 0, this));
+	}
+
 	// Grant all explicit abilities
 	for (TSubclassOf<URsGameplayAbilityBase>& Ability : DefaultAbilities)
 	{
-		GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(Ability.GetDefaultObject()->AbilityInputID), this));
+		GiveAbility(FGameplayAbilitySpec(Ability, 1,
+			static_cast<int32>(Ability.GetDefaultObject()->AbilityInputID), this));
 	}
 }
 
@@ -143,6 +331,54 @@ void URsAbilityComponent::RsAbilityFailed(const UGameplayAbility* AbilityObject,
 	const FGameplayTagContainer& FailureTags)
 {
 	OnAbilityFailed.Broadcast(Cast<URsGameplayAbilityBase>(AbilityObject), FailureTags);
+}
+
+/**
+ * \brief Begins a research request, adding the research to the research data array if eligible
+ * \param AbilityReference The ability to be researched
+ */
+void URsAbilityComponent::Server_ResearchBegin_Implementation(TSubclassOf<UGameplayAbility> AbilityReference)
+{
+	if (IsValid(AbilityReference))
+	{
+
+	}
+}
+
+void URsAbilityComponent::OnRep_ResearchProgress_Implementation(const TArray<FResearchProgress>& OldProgress)
+{
+	for (int i = ResearchProgress.Num() - 1; i >= 0; i--)
+	{
+		if (ResearchProgress.IsValidIndex(i))
+		{
+			// Existing research
+			if (OldProgress.Contains(ResearchProgress[i]))
+			{
+				for (const auto& OldResearch : OldProgress)
+				{
+					// Ability research existed previously, and a value has changed
+					if (OldResearch.AbilityReference == ResearchProgress[i].AbilityReference)
+					{
+						if (
+							 (OldResearch.ReagentsConsumed != ResearchProgress[i].ReagentsConsumed)
+							 || (OldResearch.SkillLevelCurrent != ResearchProgress[i].SkillLevelCurrent)
+							 || (OldResearch.ResearchState != ResearchProgress[i].ResearchState)
+						)
+						{
+							OnResearchUpdated.Broadcast(ResearchProgress[i].AbilityReference);
+						}
+						break;
+					}
+				}
+			}
+
+			// New research found
+			else
+			{
+				OnResearchUpdated.Broadcast(ResearchProgress[i].AbilityReference);
+			}
+		}
+	}
 }
 
 void URsAbilityComponent::Client_CooldownEnded_Implementation(
@@ -223,6 +459,9 @@ void URsAbilityComponent::Server_AbilityActivation_Implementation(TSubclassOf<UG
 				AbilityExperience.Add(AbilitySkillTag, NewValue);
 				OnAbilitySkillEarned.Broadcast(AbilitySkillTag, OldValue, NewValue);
 				Client_SkillIncrease(AbilitySkillTag, OldValue, NewValue);
+
+				// Apply experience to research schools
+				ResearchExperienceGained(AbilitySkillTag, abs(NewValue - OldValue));
 			}
 		}
 	}
@@ -270,7 +509,7 @@ float URsAbilityComponent::GetDamageBonusByTag(const FGameplayTag& DamageTag) co
 }
 
 bool URsAbilityComponent::HotkeyAbility(
-	const FInputActionValue& InputValue, const TSubclassOf<URsGameplayAbilityBase>& AbilityReference, const bool bStartAbility, const bool bCancelAbility)
+	const FInputActionValue& InputValue, const TSubclassOf<URsGameplayAbilityBase>& AbilityReference, const ETriggerEvent TriggerEvent)
 {
 	if (InputValue.Get<bool>())
 	{

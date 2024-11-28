@@ -8,7 +8,7 @@ URsGameplayAbilityBase::URsGameplayAbilityBase()
 	  AbilityCategory(),
 	  AbilityInputID(EAbilityInputID::None),
 	  AbilityRank(1),
-	  UnlockPoints(1)
+	  CooldownTime(0)
 {
 }
 

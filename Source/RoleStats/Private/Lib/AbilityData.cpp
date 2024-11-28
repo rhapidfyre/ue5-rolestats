@@ -10,18 +10,6 @@ URsAbilityDataAsset::URsAbilityDataAsset()
 {
 }
 
-int URsAbilityDataAsset::GetAbilityUnlockCost() const
-{
-	if (IsValid(AbilityReference))
-	{
-		if (URsGameplayAbilityBase* AbilityObject = GetAbilityDefaultObject())
-		{
-			return AbilityObject->UnlockPoints;
-		}
-	}
-	return -1;
-}
-
 FText URsAbilityDataAsset::GetAbilityDisplayName() const
 {
 	if (IsValid(AbilityReference))
