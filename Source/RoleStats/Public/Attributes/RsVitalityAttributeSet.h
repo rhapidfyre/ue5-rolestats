@@ -55,6 +55,9 @@ protected:
 	virtual void OnRep_CurrentHydration(const FGameplayAttributeData& OldData);
 
 	UFUNCTION()
+	virtual void OnRep_CurrentOxygen(const FGameplayAttributeData& OldData);
+
+	UFUNCTION()
 	virtual void OnRep_PassiveHealthRegen(const FGameplayAttributeData& OldData);
 
 	UFUNCTION()
@@ -70,6 +73,9 @@ protected:
 	virtual void OnRep_PassiveHydroDrain(const FGameplayAttributeData& OldData);
 
 	UFUNCTION()
+	virtual void OnRep_PassiveOxygenDrain(const FGameplayAttributeData& OldData);
+
+	UFUNCTION()
 	virtual void OnRep_MaximumHealth(const FGameplayAttributeData& OldData);
 
 	UFUNCTION()
@@ -83,6 +89,22 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_MaximumHydration(const FGameplayAttributeData& OldData);
+
+	UFUNCTION()
+	virtual void OnRep_MaximumOxygen(const FGameplayAttributeData& OldData);
+
+
+	UFUNCTION()
+	virtual void OnRep_ActiveStaminaRegen(const FGameplayAttributeData& OldData);
+
+	UFUNCTION()
+	virtual void OnRep_ActiveHungerDrain(const FGameplayAttributeData& OldData);
+
+	UFUNCTION()
+	virtual void OnRep_ActiveHydroDrain(const FGameplayAttributeData& OldData);
+
+	UFUNCTION()
+	virtual void OnRep_ActiveOxygenDrain(const FGameplayAttributeData& OldData);
 
 public:
 
@@ -111,6 +133,11 @@ public:
 	FGameplayAttributeData CurrentHydration;
 	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, CurrentHydration);
 
+	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
+		ReplicatedUsing=OnRep_CurrentOxygen, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData CurrentOxygen;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, CurrentOxygen);
+
 
 	UPROPERTY(BlueprintReadOnly, Category = "Attribute Maximums",
 		ReplicatedUsing=OnRep_MaximumHealth, Meta = (AllowPrivateAccess = true))
@@ -137,6 +164,11 @@ public:
 	FGameplayAttributeData MaximumHydration;
 	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, MaximumHydration);
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute Maximums",
+		ReplicatedUsing=OnRep_MaximumOxygen, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData MaximumOxygen;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, MaximumOxygen);
+
 
 	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
 		ReplicatedUsing=OnRep_PassiveHealthRegen, Meta = (AllowPrivateAccess = true))
@@ -162,5 +194,31 @@ public:
 		ReplicatedUsing=OnRep_PassiveHydroDrain, Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData PassiveHydroDrain;
 	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, PassiveHydroDrain);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
+		ReplicatedUsing=OnRep_PassiveOxygenDrain, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData PassiveOxygenDrain;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, PassiveOxygenDrain);
+
+
+	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
+		ReplicatedUsing=OnRep_ActiveStaminaRegen, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData ActiveStaminaRegen;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, ActiveStaminaRegen);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
+		ReplicatedUsing=OnRep_ActiveHungerDrain, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData ActiveHungerDrain;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, ActiveHungerDrain);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
+		ReplicatedUsing=OnRep_ActiveHydroDrain, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData ActiveHydroDrain;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, ActiveHydroDrain);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Status Attributes",
+		ReplicatedUsing=OnRep_ActiveOxygenDrain, Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData ActiveOxygenDrain;
+	ATTRIBUTE_ACCESSORS(URsVitalityAttributeSet, ActiveOxygenDrain);
 
 };

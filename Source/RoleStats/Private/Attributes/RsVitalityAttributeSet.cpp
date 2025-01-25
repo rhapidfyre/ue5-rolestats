@@ -158,6 +158,17 @@ void URsVitalityAttributeSet::OnRep_CurrentHydration(const FGameplayAttributeDat
 	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, CurrentHydration, OldData);
 }
 
+void URsVitalityAttributeSet::OnRep_CurrentOxygen(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetCurrentOxygen();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Current Oxygen Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, CurrentOxygen, OldData);
+}
+
 void URsVitalityAttributeSet::OnRep_PassiveHealthRegen(const FGameplayAttributeData& OldData)
 {
 	const float oldValue = OldData.GetCurrentValue();
@@ -213,6 +224,17 @@ void URsVitalityAttributeSet::OnRep_PassiveHydroDrain(const FGameplayAttributeDa
 	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, PassiveHydroDrain, OldData);
 }
 
+void URsVitalityAttributeSet::OnRep_PassiveOxygenDrain(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetPassiveOxygenDrain();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Passive Oxygen Drain Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, PassiveOxygenDrain, OldData);
+}
+
 void URsVitalityAttributeSet::OnRep_MaximumHealth(const FGameplayAttributeData& OldData)
 {
 	const float oldValue = OldData.GetCurrentValue();
@@ -266,4 +288,60 @@ void URsVitalityAttributeSet::OnRep_MaximumHydration(const FGameplayAttributeDat
 		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
 		oldValue, newValue);
 	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, MaximumHydration, OldData);
+}
+
+void URsVitalityAttributeSet::OnRep_MaximumOxygen(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetMaximumOxygen();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Maximum Oxygen Drain Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, MaximumOxygen, OldData);
+}
+
+
+void URsVitalityAttributeSet::OnRep_ActiveStaminaRegen(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetActiveStaminaRegen();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Active Stamina Regen Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, ActiveStaminaRegen, OldData);
+}
+
+void URsVitalityAttributeSet::OnRep_ActiveHungerDrain(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetActiveHungerDrain();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Active Hunger Drain Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, ActiveHungerDrain, OldData);
+}
+
+void URsVitalityAttributeSet::OnRep_ActiveHydroDrain(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetActiveHydroDrain();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Active Hydro Drain Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, ActiveHydroDrain, OldData);
+}
+
+void URsVitalityAttributeSet::OnRep_ActiveOxygenDrain(const FGameplayAttributeData& OldData)
+{
+	const float oldValue = OldData.GetCurrentValue();
+	const float newValue = GetActiveOxygenDrain();
+	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
+		"Active Oxygen Drain Updated. Was {OldValue}, Now {NewValue}",
+		GetName(), GetOwningActor()->HasAuthority()?"SRV":"CLI",
+		oldValue, newValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, ActiveOxygenDrain, OldData);
 }
