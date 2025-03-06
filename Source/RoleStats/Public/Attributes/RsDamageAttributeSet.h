@@ -24,6 +24,8 @@ DECLARE_MULTICAST_DELEGATE_SixParams(FVitalityAttributeDamageEvent,
 	bool							// bIsLuckyHit
 	);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTaken, const float, DamageTaken, const AActor*, DamageInstigator);
+
 /**
  *
  */
@@ -48,7 +50,10 @@ protected:
 		const FGameplayAttribute& Attribute, float& NewValue) override;
 
 	virtual void ClampAttributeOnChange(
-	const FGameplayAttribute& Attribute, float& NewValue) const;
+		const FGameplayAttribute& Attribute, float& NewValue) const;
+
+	virtual void PostGameplayEffectExecute(
+		const struct FGameplayEffectModCallbackData& Data) override;
 
 	UFUNCTION() virtual void OnRep_IncomingDamage(const FGameplayAttributeData& OldData);
 	UFUNCTION() virtual void OnRep_CriticalChance(const FGameplayAttributeData& OldData);
@@ -282,7 +287,9 @@ public:
 	ATTRIBUTE_ACCESSORS(URsDamageAttributeSet, DarkBonus);
 
 	mutable FVitalityAttributeEvent OnOutOfHealth; // Used to bind listeners for when health runs out
-	mutable FVitalityAttributeDamageEvent OnDamageTaken; // Used to bind listeners for when health runs out
+	mutable FVitalityAttributeDamageEvent OnAttributeDamage; // Used to bind listeners for when health runs out
+
+	UPROPERTY(BlueprintAssignable) FOnDamageTaken OnDamageTaken;
 
 private:
 

@@ -12,6 +12,8 @@
 #include "RsAbilityComponent.generated.h"
 
 
+class URsDamageAttributeSet;
+class URsVitalityAttributeSet;
 DECLARE_LOG_CATEGORY_EXTERN(LogRolestats, Log, All);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnGasDamageReceived,
@@ -50,6 +52,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAbilityCooldownStarted,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityCooldownEnded, const UClass*, AbilityReference);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnResearchUpdated, const UClass*, AbilityReference);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTargetActorUpdated, const AActor*, OldTarget);
 
 
 struct FInputActionValue;
@@ -91,6 +95,9 @@ class ROLESTATS_API URsAbilityComponent : public UAbilitySystemComponent
 public:
 
 	URsAbilityComponent();
+
+	UFUNCTION(BlueprintCallable) void SetTargetActor(AActor* NewTargetActor);
+	UFUNCTION(BlueprintPure)     AActor* GetTargetActor() const;
 
 	UFUNCTION(BlueprintPure) float GetCoreStatModifier(const FGameplayAttribute& Attribute) const;
 
@@ -136,16 +143,15 @@ public:
 
 	void ResearchPurchase(TSubclassOf<URsGameplayAbilityBase> AbilityReference);
 
+	virtual void InitDefaultAbilities();
+
+	virtual void InitDefaultEffects();
 
 protected:
 
 	void BindListeners();
 
 	virtual void BeginPlay() override;
-
-	virtual void InitDefaultAbilities();
-
-	virtual void InitDefaultEffects();
 
 	virtual void RsAbilityStarted(UGameplayAbility* AbilityObject);
 
@@ -154,6 +160,9 @@ protected:
 	virtual void RsAbilityEnded(UGameplayAbility* AbilityObject);
 
 	virtual void RsAbilityFailed(const UGameplayAbility* AbilityObject, const FGameplayTagContainer& FailureTags);
+
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+							   FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 
@@ -181,6 +190,9 @@ private:
 	UFUNCTION()
 	void CooldownTick();
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void OnRep_TargetActor(const AActor* OldTarget);
+
 public:
 
 	UPROPERTY(BlueprintAssignable) FOnGasDamageReceived		 OnGasDamageReceived;
@@ -192,6 +204,7 @@ public:
 	UPROPERTY(BlueprintAssignable) FOnAbilityCooldownStarted OnAbilityCooldownStarted;
 	UPROPERTY(BlueprintAssignable) FOnAbilityCooldownEnded	 OnAbilityCooldownEnded;
 	UPROPERTY(BlueprintAssignable) FOnResearchUpdated		 OnResearchUpdated;
+	UPROPERTY(BlueprintAssignable) FOnTargetActorUpdated	 OnTargetActorUpdated;
 
 	// Called when an ability has started without confirmation of success
 	UPROPERTY(BlueprintAssignable) FOnAbilityStarted OnAbilityStarted;
@@ -220,7 +233,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
 	TSubclassOf<UGameplayEffect> DamageCalcEffect;
 
-
 	// The ability applied when the actor has 'died'
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
 	TSubclassOf<UGameplayAbility> DeathAbility;
@@ -229,6 +241,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="ASC Settings")
 	TSubclassOf<UGameplayAbility> RespawnAbility;
 
+	UPROPERTY(ReplicatedUsing=OnRep_IsDead)
+	bool bIsDead = false;
 
 private:
 
@@ -242,15 +256,12 @@ private:
 	TArray<FResearchProgress> ResearchProgress;
 
 	TMap<TSubclassOf<UGameplayAbility>, float> AbilityCooldowns;
+	FRWLock CooldownLock;
 
 	FTimerHandle CooldownTimer;
 	float CooldownRate = 0.5f;
 
-public:
-
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-	                           FActorComponentTickFunction* ThisTickFunction) override;
-
-	UPROPERTY(ReplicatedUsing=OnRep_IsDead)
-	bool bIsDead = false;
+	// The actor being targeted by this ability component
+	UPROPERTY(ReplicatedUsing=OnRep_TargetActor)
+	AActor* TargetActor;
 };

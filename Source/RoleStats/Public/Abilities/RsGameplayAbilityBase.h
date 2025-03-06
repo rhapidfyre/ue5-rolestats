@@ -23,6 +23,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	float GetAbilityCooldownTime() const;
 
+	UFUNCTION(BlueprintPure)
+	FGameplayTagContainer GetAbilityTags() const;
+
 public:
 
 	// UI-Safe, user-friendly name for the ability.
@@ -83,4 +86,7 @@ public:
 	// TODO - Obsolete?
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Abilities")
 	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Abilities")
+	FGameplayTagContainer AbilityTagContainer;
 };

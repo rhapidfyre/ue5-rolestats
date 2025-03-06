@@ -3,6 +3,7 @@
 
 #include "Attributes/RsVitalityAttributeSet.h"
 
+#include "Lib/RsGlobals.h"
 #include "Logging/StructuredLog.h"
 #include "Net/UnrealNetwork.h"
 
@@ -45,25 +46,33 @@ void URsVitalityAttributeSet::PreAttributeChange(const FGameplayAttribute& Attri
 
 void URsVitalityAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
-	float minAttributeValue = 0.f;
-	float maxAttributeValue;
+	float minAttributeValue = STAT_MIN;
+	float maxAttributeValue = STAT_MAX;
 	if (GetCurrentHealthAttribute() == Attribute)
 	{
 		// Allow health to go negative
 		maxAttributeValue = GetMaximumHealth();
 		minAttributeValue = 0 - maxAttributeValue;
 	}
+	else if (GetCurrentStaminaAttribute() == Attribute)
+	{
+		maxAttributeValue = GetMaximumStamina();
+		minAttributeValue = 0.f;
+	}
+	else if (GetCurrentMagicAttribute() == Attribute)
+	{
+		maxAttributeValue = GetMaximumMagic();
+		minAttributeValue = 0.f;
+	}
 	else if (GetCurrentHungerAttribute() == Attribute)
 	{
 		maxAttributeValue = GetMaximumHunger();
+		minAttributeValue = 0.f;
 	}
 	else if (GetCurrentHydrationAttribute() == Attribute)
 	{
 		maxAttributeValue = GetMaximumHydration();
-	}
-	else
-	{
-		return;
+		minAttributeValue = 0.f;
 	}
 	NewValue = FMath::Clamp(NewValue, minAttributeValue, maxAttributeValue);
 }
@@ -71,6 +80,103 @@ void URsVitalityAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& A
 void URsVitalityAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	// Stop health regeneration if health is at or above maximum
+	if (Attribute == GetCurrentHealthAttribute())
+	{
+		if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+		{
+			if (NewValue >= GetMaximumHealth())
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Health_Full) == 0)
+					ASC->AddLooseGameplayTag(TAG_Vitality_Health_Full);
+			}
+			else
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Health_Full) > 0)
+					ASC->RemoveLooseGameplayTag(TAG_Vitality_Health_Full);
+			}
+
+			if (NewValue < 0.f)
+			{
+				if (ASC->GetGameplayTagCount(TAG_Effects_Status_Dead) == 0)
+					ASC->AddLooseGameplayTag(TAG_Effects_Status_Dead);
+			}
+			else
+			{
+				if (ASC->GetGameplayTagCount(TAG_Effects_Status_Dead) > 0)
+					ASC->RemoveLooseGameplayTag(TAG_Effects_Status_Dead);
+			}
+		}
+	}
+	// Stop stamina regeneration if stamina is at or above maximum
+	else if (Attribute == GetCurrentStaminaAttribute())
+	{
+		if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+		{
+			if (NewValue >= GetMaximumStamina())
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Stamina_Full) == 0)
+					ASC->AddLooseGameplayTag(TAG_Vitality_Stamina_Full);
+			}
+			else
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Stamina_Full) > 0)
+					ASC->RemoveLooseGameplayTag(TAG_Vitality_Stamina_Full);
+			}
+		}
+	}
+	// Stop magic regeneration if magic is at or above maximum
+	else if (Attribute == GetCurrentMagicAttribute())
+	{
+		if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+		{
+			if (NewValue >= GetMaximumMagic())
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Magic_Full) == 0)
+					ASC->AddLooseGameplayTag(TAG_Vitality_Magic_Full);
+			}
+			else
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Magic_Full) > 0)
+					ASC->RemoveLooseGameplayTag(TAG_Vitality_Magic_Full);
+			}
+		}
+	}
+	// Stop hunger drain if hunger is at or below zero
+	else if (Attribute == GetCurrentHungerAttribute())
+	{
+		if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+		{
+			if (NewValue <= 0.f)
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Starving) == 0)
+					ASC->AddLooseGameplayTag(TAG_Vitality_Starving);
+			}
+			else
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Starving) > 0)
+					ASC->RemoveLooseGameplayTag(TAG_Vitality_Starving);
+			}
+		}
+	}
+	// Stop hydration drain if hunger is at or below zero
+	else if (Attribute == GetCurrentHydrationAttribute())
+	{
+		if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+		{
+			if (NewValue <= 0.f)
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Dehyrated) == 0)
+					ASC->AddLooseGameplayTag(TAG_Vitality_Dehyrated);
+			}
+			else
+			{
+				if (ASC->GetGameplayTagCount(TAG_Vitality_Dehyrated) > 0)
+					ASC->RemoveLooseGameplayTag(TAG_Vitality_Dehyrated);
+			}
+		}
+	}
 }
 
 
@@ -109,8 +215,8 @@ void URsVitalityAttributeSet::OnRep_CurrentHealth(const FGameplayAttributeData& 
 	float oldValue = OldData.GetCurrentValue();
 	float newValue = GetCurrentHealth();
 	UE_LOGFMT(LogAbilitySystemComponent, VeryVerbose,  "{Name}({Authority}): "
-		"Current Health Updated. Was {OldValue}, Now {NewValue}", GetName(),
-		GetOwningActor()->HasAuthority()?"SRV":"CLI", oldValue, newValue);
+		"Current Health Updated. Was {OldValue}, Now {NewValue} (Difference = {ValueDifference}", GetName(),
+		GetOwningActor()->HasAuthority()?"SRV":"CLI", oldValue, newValue, oldValue - newValue);
 	GAMEPLAYATTRIBUTE_REPNOTIFY(URsVitalityAttributeSet, CurrentHealth, OldData);
 }
 

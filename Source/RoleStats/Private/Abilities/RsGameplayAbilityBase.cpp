@@ -16,3 +16,11 @@ float URsGameplayAbilityBase::GetAbilityCooldownTime() const
 {
 	return CooldownTime > 0.f ? CooldownTime : 0.f;
 }
+
+FGameplayTagContainer URsGameplayAbilityBase::GetAbilityTags() const
+{
+	FGameplayTagContainer TempTags(AbilityTagContainer);
+	TempTags.AddTag(AbilitySchool);
+	TempTags.AddTag(AttackType);
+	return TempTags;
+}

@@ -3,9 +3,11 @@
 
 #include "RsAbilityComponent.h"
 
+#include "AbilitySystemLog.h"
 #include "Abilities/RsGameplayAbilityBase.h"
 #include "Effects/RsGameplayEffectBase.h"
 #include "EnhancedInputComponent.h"
+#include "Attributes/RsDamageAttributeSet.h"
 #include "Attributes/RsVitalityAttributeSet.h"
 #include "Kismet/GameplayStatics.h"
 #include "Lib/RsGlobals.h"
@@ -69,6 +71,18 @@ URsAbilityComponent::URsAbilityComponent()
 	this->OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &URsAbilityComponent::NewGameplayEffectAppliedToSelf);
 	FOnGivenActiveGameplayEffectRemoved* GERemovedDelegate = &OnAnyGameplayEffectRemovedDelegate();
 	GERemovedDelegate->AddUObject(this, &URsAbilityComponent::OnAnyGameplayEffectRemoved);
+}
+
+void URsAbilityComponent::SetTargetActor(AActor* NewTargetActor)
+{
+	const AActor* OldTarget = TargetActor;
+	TargetActor = NewTargetActor;
+	OnTargetActorUpdated.Broadcast(OldTarget);
+}
+
+AActor* URsAbilityComponent::GetTargetActor() const
+{
+	return TargetActor;
 }
 
 void URsAbilityComponent::NewGameplayEffectAppliedToSelf(
@@ -255,14 +269,6 @@ void URsAbilityComponent::BindListeners()
 void URsAbilityComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Server-Only Executions
-	if (GetOwner()->HasAuthority())
-	{
-		InitDefaultAbilities();
-		InitDefaultEffects();
-	}
-
 	BindListeners();
 }
 
@@ -282,8 +288,11 @@ void URsAbilityComponent::InitDefaultAbilities()
 	// Grant all explicit abilities
 	for (TSubclassOf<URsGameplayAbilityBase>& Ability : DefaultAbilities)
 	{
-		GiveAbility(FGameplayAbilitySpec(Ability, 1,
-			static_cast<int32>(Ability.GetDefaultObject()->AbilityInputID), this));
+		if (IsValid(Ability))
+		{
+			GiveAbility(FGameplayAbilitySpec(Ability, 1,
+				static_cast<int32>(Ability.GetDefaultObject()->AbilityInputID), this));
+		}
 	}
 }
 
@@ -294,6 +303,12 @@ void URsAbilityComponent::InitDefaultEffects()
 
 	for (TSubclassOf<URsGameplayEffectBase>& Effect : DefaultEffects)
 	{
+		if (GetGameplayEffectCount(Effect, this))
+		{
+			UE_LOGFMT(LogTemp, Warning, "GAS: Default Effect '{Effect}' already exists!", Effect->GetName());
+			continue;
+		}
+
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingSpec(Effect, 1, EffectContext);
 		if (SpecHandle.IsValid())
 		{
@@ -386,7 +401,10 @@ void URsAbilityComponent::Client_CooldownEnded_Implementation(
 {
 	if (IsValid(AbilityReference))
 	{
-		AbilityCooldowns.Remove(AbilityReference);
+		{
+			FRWScopeLock WriteLock(CooldownLock, SLT_Write);
+			AbilityCooldowns.Remove(AbilityReference);
+		}
 		OnAbilityCooldownEnded.Broadcast(AbilityReference);
 	}
 }
@@ -399,7 +417,10 @@ void URsAbilityComponent::Client_CooldownStarted_Implementation(
 		const URsGameplayAbilityBase* DefaultObject = Cast<URsGameplayAbilityBase>(AbilityReference.GetDefaultObject());
 		if (IsValid(DefaultObject))
 		{
-			AbilityCooldowns.Add(AbilityReference);
+			{
+				FRWScopeLock WriteLock(CooldownLock, SLT_Write);
+				AbilityCooldowns.Add(AbilityReference);
+			}
 			OnAbilityCooldownStarted.Broadcast(AbilityReference, DefaultObject->CooldownTime);
 		}
 	}
@@ -413,19 +434,39 @@ void URsAbilityComponent::CooldownTick()
 		return;
 	}
 
-	for (auto& AbilityCooldown : AbilityCooldowns)
+	TArray<TSubclassOf<UGameplayAbility>> AllCooldownKeys;
 	{
-		if (AbilityCooldown.Value <= 0.f)
+		FRWScopeLock ReadLock(CooldownLock, SLT_ReadOnly);
+		AbilityCooldowns.GetKeys(AllCooldownKeys);
+	}
+
+	for (const auto& CooldownKey : AllCooldownKeys)
+	{
+		if (AbilityCooldowns.Contains(CooldownKey))
 		{
-			OnAbilityCooldownEnded.Broadcast(AbilityCooldown.Key);
-			Client_CooldownEnded(AbilityCooldown.Key);
-			AbilityCooldowns.Remove(AbilityCooldown.Key);
-		}
-		else
-		{
-			AbilityCooldown.Value -= CooldownRate;
+			// Lock it - The entry is either being removed, or modified
+			float& CooldownValue = AbilityCooldowns[CooldownKey];
+			if (CooldownValue <= 0.f)
+			{
+				OnAbilityCooldownEnded.Broadcast(CooldownKey);
+				{
+					FRWScopeLock WriteLock(CooldownLock, SLT_Write);
+					AbilityCooldowns.Remove(CooldownKey);
+				}
+				Client_CooldownEnded(CooldownKey);
+			}
+			else
+			{
+				FRWScopeLock WriteLock(CooldownLock, SLT_Write);
+				CooldownValue -= CooldownRate;
+			}
 		}
 	}
+}
+
+void URsAbilityComponent::OnRep_TargetActor_Implementation(const AActor* OldTarget)
+{
+	OnTargetActorUpdated.Broadcast(OldTarget);
 }
 
 void URsAbilityComponent::Client_SkillIncrease_Implementation(const FGameplayTag& SchoolTag, const float OldValue,
@@ -446,7 +487,10 @@ void URsAbilityComponent::Server_AbilityActivation_Implementation(TSubclassOf<UG
 		{
 			if (DefaultObject->CooldownTime > 0.f)
 			{
-				AbilityCooldowns.Add(AbilityReference, DefaultObject->CooldownTime);
+				{
+					FRWScopeLock WriteLock(CooldownLock, SLT_Write);
+					AbilityCooldowns.Add(AbilityReference, DefaultObject->CooldownTime);
+				}
 				OnAbilityCooldownStarted.Broadcast(AbilityReference, DefaultObject->CooldownTime);
 				Client_CooldownStarted(AbilityReference, DefaultObject->CooldownTime);
 			}
@@ -495,16 +539,22 @@ float URsAbilityComponent::GetCoreStatModifier(const FGameplayAttribute& Attribu
 
 float URsAbilityComponent::GetCoreStatByTag(const FGameplayTag& StatTag) const
 {
+	UE_LOGFMT(LogAbilitySystem, Warning, "{GetName}({NetAuthority}) - GetCoreStatByTag() is not implemented!"
+		, GetOwner()->GetName(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	return 0.f;
 }
 
 float URsAbilityComponent::GetDamageResistanceByTag(const FGameplayTag& DamageTag) const
 {
+	UE_LOGFMT(LogAbilitySystem, Warning, "{GetName}({NetAuthority}) - GetDamageResistanceByTag() is not implemented!"
+		, GetOwner()->GetName(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	return 0.f;
 }
 
 float URsAbilityComponent::GetDamageBonusByTag(const FGameplayTag& DamageTag) const
 {
+	UE_LOGFMT(LogAbilitySystem, Warning, "{GetName}({NetAuthority}) - GetDamageBonusByTag() is not implemented!"
+		, GetOwner()->GetName(), GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	return 0.f;
 }
 
@@ -530,8 +580,8 @@ bool URsAbilityComponent::HotkeyAbility(
 
 				if (DefaultObject->CooldownTime > 0.f)
 				{
+					FRWScopeLock WriteLock(CooldownLock, SLT_Write);
 					AbilityCooldowns.Add(AbilityReference, DefaultObject->CooldownTime);
-					//OnAbilityCooldownStarted.Broadcast(AbilityReference, DefaultObject->CooldownTime);
 				}
 			}
 
@@ -643,6 +693,7 @@ void URsAbilityComponent::GetLifetimeReplicatedProps(TArray<class FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(URsAbilityComponent, bIsDead);
+	DOREPLIFETIME(URsAbilityComponent, TargetActor);
 }
 
 

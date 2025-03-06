@@ -3,6 +3,9 @@
 
 #include "Attributes/RsDamageAttributeSet.h"
 
+#include "GameplayEffectExtension.h"
+#include "RsAbilityComponent.h"
+#include "Attributes/RsVitalityAttributeSet.h"
 #include "Logging/StructuredLog.h"
 #include "Net/UnrealNetwork.h"
 
@@ -66,6 +69,21 @@ void URsDamageAttributeSet::ClampAttributeOnChange(const FGameplayAttribute& Att
 	NewValue = FMath::Clamp(NewValue, -1000.f, 1000.f);
 }
 
+void URsDamageAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+	if (Data.EvaluatedData.Attribute == GetIncomingDamageAttribute())
+	{
+		float InDamageValue = GetIncomingDamage();
+		SetIncomingDamage(0.f);
+
+		UE_LOGFMT(LogAbilitySystemComponent, Display,  "{Name}({Authority}): Incoming Damage = {IncomingDamage}"
+			, GetOwningActor()->GetName(), GetOwningAbilitySystemComponent()->IsOwnerActorAuthoritative() ? "SERVER" : "CLIENT", InDamageValue);
+
+		OnDamageTaken.Broadcast(InDamageValue, Data.EffectSpec.GetContext().GetOriginalInstigator());
+	}
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //	REPLICATION
@@ -76,6 +94,7 @@ void URsDamageAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	// Damage Attributes
+	DOREPLIFETIME_CONDITION_NOTIFY(URsDamageAttributeSet, IncomingDamage,		COND_None, 	REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(URsDamageAttributeSet, CriticalChance,		COND_OwnerOnly, 	REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(URsDamageAttributeSet, CriticalMultiplier,	COND_OwnerOnly, 	REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(URsDamageAttributeSet, LuckyChance,			COND_OwnerOnly, 	REPNOTIFY_Always);
